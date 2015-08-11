@@ -1,0 +1,3 @@
+var ProductBox = React.createClass({
+
+});
