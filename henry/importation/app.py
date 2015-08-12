@@ -1,6 +1,7 @@
 # -*- coding: utf8 -*-
 import csv
-from bottle import Bottle, request, static_file
+import decimal
+from bottle import Bottle, request, static_file, JSONPlugin
 import re
 import bottle
 import sys
@@ -8,11 +9,29 @@ from decimal import Decimal
 from .bottlerest import DBApi, RestApiApp
 from .models import NUniversalProduct, NPurchase, NPurchaseItem, Base, NDeclaredGood
 from sqlalchemy import create_engine
+import json
 
-CONN_STRING = 'sqlite:///test.db'
+class ModelEncoder(json.JSONEncoder):
+    def __init__(self, use_int_repr=False, decimal_places=2, *args, **kwargs):
+        super(ModelEncoder, self).__init__(*args, **kwargs)
+
+    def default(self, obj):
+        if isinstance(obj, decimal.Decimal):
+            return float(obj)
+        if hasattr(obj, 'isoformat'):
+            return obj.isoformat()
+        return super(ModelEncoder, self).default(obj)
+
+def json_dumps(x):
+    return json.dumps(x, cls=ModelEncoder)
+
+
+CONN_STRING = 'mysql+mysqldb://root:wolverineaccess@localhost/import?charset=utf8'
 engine = create_engine(CONN_STRING)
-app = Bottle()
-api = RestApiApp(engine, app)
+app = Bottle(autojson=False)
+
+app.install(JSONPlugin(json_dumps=json_dumps))
+api = RestApiApp(engine, app, encoder=ModelEncoder)
 api.bind_api('/importapi/prod', NUniversalProduct)
 api.bind_api('/importapi/purchaseheader', NPurchase)
 api.bind_api('/importapi/purchaseitem', NPurchaseItem)
@@ -20,20 +39,16 @@ api.bind_api('/importapi/declaredgood', NDeclaredGood)
 
 prodapi = api.getapi(NUniversalProduct)
 
+@app.get('/app/purchase/<purchase_id>')
+def get_purchase_full(purchase_id):
+    obj = {}
+    obj['header'] = purchase 
+    
+
 
 @app.get('/<path:path>')
 def static_files(path):
     return static_file(path, root='static')
-
-@app.get('/import/prod')
-@app.get('/import/prod/<pid>')
-def create_or_edit_prod(pid=None):
-    if pid is not None:
-        proddict = api.getapi(NUniversalProduct).get(pid)
-    else:
-        proddict= prodapi.obj_to_dict(None, excludenone=False)
-    temp = jinja_env.get_template('quickform.html')
-    return temp.render(obj=proddict, action='post', method=request.url)
 
 
 @app.get('/importapi/purchase/pid')

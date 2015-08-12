@@ -2,6 +2,7 @@ from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import sessionmaker
 import bottle
 import json
+import decimal
 
 
 class DBApi(object):
@@ -63,9 +64,10 @@ class DBApi(object):
 
 class RestApi(object):
 
-    def __init__(self, dbapi, sessionmaker):
+    def __init__(self, dbapi, sessionmaker, encoder=None):
         self.dbapi = dbapi
         self.sessionmaker = sessionmaker
+        self.encoder = encoder
 
     def wrapped_call(self, func, *args, **kwargs):
         try:
@@ -108,7 +110,7 @@ class RestApi(object):
 
 class RestApiApp(object):
 
-    def __init__(self, connection, bottle_app=None):
+    def __init__(self, connection, bottle_app=None, encoder=None):
         if bottle_app is None:
             bottle_app = bottle.default_app()
         self.app = bottle_app
@@ -117,12 +119,13 @@ class RestApiApp(object):
             connection = create_engine(connection)
         self.connection = connection
         self.sessionmaker = sessionmaker(bind=connection)
+        self.encoder = encoder
         self.apis = {}
 
     def bind_api(self, url, clazz):
         dbapi = DBApi(clazz)
         self.apis[clazz] = dbapi
-        restapi = RestApi(dbapi, self.sessionmaker)
+        restapi = RestApi(dbapi, self.sessionmaker, self.encoder)
         url_with_id = url +'/<pkey>'
         self.app.get(url_with_id)(restapi.get)
         self.app.put(url_with_id)(restapi.put)

@@ -11,7 +11,10 @@
   <body>
     <div id="content"></div>
     <script type="text/jsx">
-     React.render(<ProdBox/>, document.getElementById("content"));
+     var content = (
+         <Purchase uid="1"/>
+      );
+     React.render(content, document.getElementById("content"));
     </script>
   </body>
 </html>
