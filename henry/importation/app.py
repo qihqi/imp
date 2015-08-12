@@ -14,7 +14,7 @@ engine = create_engine(CONN_STRING)
 app = Bottle()
 api = RestApiApp(engine, app)
 api.bind_api('/importapi/prod', NUniversalProduct)
-api.bind_api('/importapi/purchase', NPurchase)
+api.bind_api('/importapi/purchaseheader', NPurchase)
 api.bind_api('/importapi/purchaseitem', NPurchaseItem)
 api.bind_api('/importapi/declaredgood', NDeclaredGood)
 
@@ -34,6 +34,13 @@ def create_or_edit_prod(pid=None):
         proddict= prodapi.obj_to_dict(None, excludenone=False)
     temp = jinja_env.get_template('quickform.html')
     return temp.render(obj=proddict, action='post', method=request.url)
+
+
+@app.get('/importapi/purchase/pid')
+def get_purchase(pid):
+    thing = get_purchase(api.sessionmaker, pid)
+    print thing.deserialize()
+    return thing.deserialize()
 
 
 def parse_decimal(x):
