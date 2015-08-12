@@ -7,14 +7,34 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.3/JSXTransformer.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script src="components.jsx" type="text/jsx"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-router/0.13.3/ReactRouter.js" ></script>
   </head>
   <body>
     <div id="content"></div>
     <script type="text/jsx">
-     var content = (
-         <Purchase uid="1"/>
-      );
-     React.render(content, document.getElementById("content"));
+    var Router = window.ReactRouter;
+    var Route = Router.Route;
+    var RouteHandler = Router.RouteHandler;
+    var App = React.createClass({
+      render: function() {
+        return (
+          <div>
+            <h1>App</h1>
+            <RouteHandler/>
+          </div>
+        );
+      }
+    });
+
+    var routes = (
+        <Route handler={App}>
+            <Route path="purchase/:uid" handler={Purchase} />
+            <Route path="prod/:uid" handler={ProdBox} />
+        </Route>
+    );
+    Router.run(routes, Router.HashLocation, function(Root) {
+        React.render(<Root />, document.getElementById("content"));
+    });
     </script>
   </body>
 </html>

@@ -8,6 +8,7 @@ import sys
 from decimal import Decimal
 from .bottlerest import DBApi, RestApiApp
 from .models import NUniversalProduct, NPurchase, NPurchaseItem, Base, NDeclaredGood
+from .api import get_report
 from sqlalchemy import create_engine
 import json
 
@@ -20,6 +21,8 @@ class ModelEncoder(json.JSONEncoder):
             return float(obj)
         if hasattr(obj, 'isoformat'):
             return obj.isoformat()
+        if hasattr(obj, 'serialize'):
+            return obj.serialize()
         return super(ModelEncoder, self).default(obj)
 
 def json_dumps(x):
@@ -39,11 +42,12 @@ api.bind_api('/importapi/declaredgood', NDeclaredGood)
 
 prodapi = api.getapi(NUniversalProduct)
 
-@app.get('/app/purchase/<purchase_id>')
-def get_purchase_full(purchase_id):
-    obj = {}
-    obj['header'] = purchase 
-    
+@app.get('/importapi/purchase/<pid>')
+def get_purchase(pid):
+    session = api.sessionmaker()
+    thing = get_report(session, pid)
+    print thing.serialize()
+    return thing.serialize()
 
 
 @app.get('/<path:path>')
@@ -51,16 +55,7 @@ def static_files(path):
     return static_file(path, root='static')
 
 
-@app.get('/importapi/purchase/pid')
-def get_purchase(pid):
-    thing = get_purchase(api.sessionmaker, pid)
-    print thing.deserialize()
-    return thing.deserialize()
-
-
 def parse_decimal(x):
-    x = x.encode('utf8')
-    print 'before x ', x
     x = re.sub(r'[^\d\.]', '', x)
     print x
     return Decimal(x)

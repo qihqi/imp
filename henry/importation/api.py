@@ -1,5 +1,5 @@
 from sqlalchemy.inspection import inspect
-from .models import NPurchaseItem, NPurchase
+from .models import NPurchaseItem, NPurchase, NUniversalProduct
 
 def make_serializable(names):
     class SerializableMixin(object):
@@ -9,11 +9,11 @@ def make_serializable(names):
             self.merge_from(kwargs)
 
         def merge_from(self, obj):
-            self.merge(self, obj, self._name)
+            self.merge(obj, self, self._name)
             return self
 
         def merge_to(self, obj):
-            self.merge(obj, self, self._name)
+            self.merge(self, obj, self._name)
             return obj
 
         @classmethod
@@ -39,20 +39,24 @@ def make_serializable(names):
             }
     return SerializableMixin
 
-Purchase = make_serializable(['header', 'item'])
+Purchase = make_serializable(['header', 'items'])
 Header = make_serializable(inspect(NPurchase).columns.keys())
 
-Item = make_serializable(['color', 'quantity', 'price', 'name_es', 'name_zh',
+Item = make_serializable(['color', 'quantity', 'price_rmb', 'name_es', 
+                          'name_zh', 'upi', 
                           'providor_zh', 'providor_item_id'])
 
 def get_report(session, pkey):
     header = session.query(NPurchase).filter_by(uid=pkey).first()
     if header is None:
         return None
-    items = list(session.query(NPurchaseItem).join(
-        NUniversalProduct, NUniversalProducto.upi=NPurchaseItem.upi).filter_by(
-        purchase_id=pkey))
+    items = list(session.query(
+        NPurchaseItem.color, NPurchaseItem.quantity, NPurchaseItem.price_rmb, 
+        NUniversalProduct.name_es, NUniversalProduct.name_zh, NUniversalProduct.providor_zh, 
+        NUniversalProduct.providor_item_id, NUniversalProduct.upi).filter(
+        NUniversalProduct.upi==NPurchaseItem.upi).filter(
+        NPurchaseItem.purchase_id == pkey))
     return Purchase(
-        header = Header.deserialize(header)
+        header = Header.deserialize(header),
         items = map(Item.deserialize, items)
     )
