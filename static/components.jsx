@@ -1,3 +1,9 @@
+const PROD_KEYS = [
+    "name_es", 
+    "name_zh", 
+    "providor_zh", 
+    "providor_item_id",
+    "declared_id"];
 var UpdateElement = React.createClass({
     render: function() {
         alert(this.props.handler);
@@ -74,6 +80,17 @@ var Declared = React.createClass({
     }
 });
 
+var SelectBox = React.createClass({
+    render: function() {
+        var options = this.props.options.map(function(option) {
+            return <option value="{option.value}">{option.display}</option>;
+        });
+        <select ref={this.props.ref} onChange={this.props.handler}>
+            {options}
+        </select>
+    }
+});
+
 var ProdBox = React.createClass({
     fetchcontent: fetch_and_set_content('/importapi/prod/'),
     altercontent: function(){
@@ -102,11 +119,8 @@ var ProdBox = React.createClass({
         this.setState(newstate);
     },
     render: function() {
-        declared = <Declared uid={this.state.declared_id}/>;
         return (<form onSubmit={this.submit}> 
-            {render_input_for_keys(["name_es", 
-                "name_zh", "providor_zh", "providor_item_id"]).bind(this)()}
-            {declared}
+            {render_input_for_keys(PROD_KEYS).bind(this)()}
             <input type="submit"/>
             </form>); 
     }
@@ -173,3 +187,31 @@ var Purchase = React.createClass({
     }
 });
 
+function display_list_of_item(names) {
+    var list = {
+        render: function() {
+            var content = this.props.list.map(function() {
+                var innerhtml = '';
+                for (var x in names) {
+                    innerhtml += ' ' + i[x];
+                }
+                return <li> {innerhtml} </li>;
+            });
+            return (<ul>{lists}</ul>);
+        }
+    };
+    return list;
+}
+
+var ProdList = React.createClass(display_list_of_item([
+            'name_es', 'name_zh']));
+
+var DeclaredItem = React.createClass({
+    fetchcontent: function() {}, 
+    render: function() {
+        return (<div>
+            <p>{this.state.display_name} {this.state.display_price}</p>
+            <ProdList list={this.state.prods} />
+        </div>);
+    }
+});
