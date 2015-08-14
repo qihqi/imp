@@ -61,9 +61,9 @@ def parse_decimal(x):
     return Decimal(x)
 
 if __name__ == '__main__':
+    Base.metadata.create_all(engine)
     bottle.run(app)
     sys.exit(0)
-    Base.metadata.create_all(engine)
     session = api.sessionmaker()
     prodapi = api.getapi(NUniversalProduct)
     with open(sys.argv[1]) as f:

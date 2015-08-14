@@ -1,19 +1,12 @@
+'use strict';
+var comp = require('./components.jsx');
+
 const PROD_KEYS = [
     "name_es",
     "name_zh",
     "providor_zh",
     "providor_item_id",
     "declared_id"];
-
-var UpdateElement = React.createClass({
-    render: function() {
-        alert(this.props.handler);
-        return (<form onSubmit={this.props.handler}>
-            {this.props.children}
-            <input type="submit"/>
-            </form>);
-    }
-});
 
 function render_input_for_keys(keys, classes) {
     return function() {
@@ -83,17 +76,6 @@ var Declared = React.createClass({
             {render_input_for_keys(["display_name", "display_price"]).bind(this)()}
             <input type="submit"/>
             </form>);
-    }
-});
-
-var SelectBox = React.createClass({
-    render: function() {
-        var options = this.props.options.map(function(option) {
-            return <option value="{option.value}">{option.display}</option>;
-        });
-        <select ref={this.props.ref} onChange={this.props.handler}>
-            {options}
-        </select>
     }
 });
 
@@ -193,27 +175,18 @@ var Purchase = React.createClass({
     }
 });
 
-function display_list_of_item(names) {
-    var list = {
-        render: function() {
-            var lists = this.props.list.map(function(i) {
-                var innerhtml = '';
-                for (var x in names) {
-                    innerhtml += (' ' + i[names[x]]);
-                }
-                return <li> {innerhtml} </li>;
-            });
-            return (<ul>{lists}</ul>);
-        }
-    };
-    return list;
-}
 
-var ProdList = React.createClass(display_list_of_item(PROD_KEYS));
+var ProdList = React.createClass(comp.display_list_of_item(PROD_KEYS));
 
 var Test = React.createClass({
     render: function() {
-        return <DeclaredItem uid="1" />
+        return <CreateBox url='/importapi/declaredgood' names={["display_name", "display_price"]} />
+    }
+});
+
+var DeclaredUI = React.createClass({
+    render: function() {
+        return <DeclaredItem uid={this.props.params.uid} />
     }
 });
 
@@ -237,3 +210,11 @@ var DeclaredItem = React.createClass({
         </div>);
     }
 });
+
+module.exports.Purchase = Purchase;
+module.exports.DeclaredItem = DeclaredItem;
+
+window.Purchase = Purchase;
+window.DeclaredUI = DeclaredUI;
+window.Test = Test;
+window.ProdBox = ProdBox;
