@@ -1,16 +1,17 @@
 const PROD_KEYS = [
-    "name_es", 
-    "name_zh", 
-    "providor_zh", 
+    "name_es",
+    "name_zh",
+    "providor_zh",
     "providor_item_id",
     "declared_id"];
+
 var UpdateElement = React.createClass({
     render: function() {
         alert(this.props.handler);
-        return (<form onSubmit={this.props.handler}> 
-            {this.props.children} 
+        return (<form onSubmit={this.props.handler}>
+            {this.props.children}
             <input type="submit"/>
-            </form>); 
+            </form>);
     }
 });
 
@@ -19,9 +20,9 @@ function render_input_for_keys(keys, classes) {
         var values = keys.map(function(name) {
             return (
                 <p>
-                {name}: 
-                <input name={name} ref={name} 
-                value={this.state[name]} 
+                {name}:
+                <input name={name} ref={name}
+                value={this.state[name]}
                 onChange={this.handler.bind(this, name)}/>
                 </p>
                 );
@@ -32,20 +33,25 @@ function render_input_for_keys(keys, classes) {
     }
 }
 
-function fetch_and_set_content(baseurl) {
+function fetch_and_set_content(baseurl, callback) {
     return function(uid) {
         var url = baseurl + uid;
         $.ajax({
             url: url,
             success: function(data) {
-                this.setState(data);
+                callback(data);
             }.bind(this)
         });
     }
 }
 
+function setState(x) {
+    this.setState(x);
+}
+
 var Declared = React.createClass({
-    fetchcontent: fetch_and_set_content('/importapi/declared/'),
+    fetchcontent: fetch_and_set_content('/importapi/declared/',
+        function(x) { this.setState(x) }.bind(this)),
     altercontent: function(){
         var url = '/importapi/declared/' + this.props.params.uid;
         $.ajax({
@@ -63,7 +69,7 @@ var Declared = React.createClass({
     },
     getInitialState: function() {
         if (typeof this.props.uid !== 'undefined') {
-            this.fetchcontent(this.props.params.uid);
+            this.fetchcontent(this.props.params.uid, setState.bind(this));
         }
         return {"display_name": 2, "display_price": 2};
     },
@@ -73,10 +79,10 @@ var Declared = React.createClass({
         this.setState(newstate);
     },
     render: function() {
-        return (<form onSubmit={this.submit}> 
+        return (<form onSubmit={this.submit}>
             {render_input_for_keys(["display_name", "display_price"]).bind(this)()}
             <input type="submit"/>
-            </form>); 
+            </form>);
     }
 });
 
@@ -92,7 +98,7 @@ var SelectBox = React.createClass({
 });
 
 var ProdBox = React.createClass({
-    fetchcontent: fetch_and_set_content('/importapi/prod/'),
+    fetchcontent: fetch_and_set_content('/importapi/prod/', setState.bind(this)),
     altercontent: function(){
         alert('here');
         var url = '/importapi/prod/' + this.props.params.uid;
@@ -110,30 +116,30 @@ var ProdBox = React.createClass({
         this.altercontent();
     },
     getInitialState: function() {
-        this.fetchcontent(this.props.params.uid);
+        this.fetchcontent(this.props.params.uid, setState.bind(this));
         return {"name_es": 2, "name_zh": 2};
     },
     handler: function(key, event) {
         var newstate = {};
         newstate[event.target.name] = event.target.value;
-        this.setState(newstate);
+        setState(newstate);
     },
     render: function() {
-        return (<form onSubmit={this.submit}> 
+        return (<form onSubmit={this.submit}>
             {render_input_for_keys(PROD_KEYS).bind(this)()}
             <input type="submit"/>
-            </form>); 
+            </form>);
     }
 });
 
 var PurchaseHeader = React.createClass({
     getInitialState: function() {
-        this.fetchcontent(this.props.uid);
+        this.fetchcontent(this.props.uid, setState.bind(this));
         return {uid: 1, total_rmb: 100};
     },
     handler: function(key, event) {
     },
-    fetchcontent: fetch_and_set_content('/importapi/purchase/'),
+    fetchcontent: fetch_and_set_content('/importapi/purchase/', setState.bind(this)),
     render: render_input_for_keys(['timestamp', 'uid', 'total_rmb', 'providor'])
 });
 
@@ -166,7 +172,7 @@ var Purchase = React.createClass({
             </tr>);
         });
         return (
-            <div> 
+            <div>
             <PurchaseHeader uid={this.props.params.uid} />
             <table>
                 <tr>
@@ -190,10 +196,10 @@ var Purchase = React.createClass({
 function display_list_of_item(names) {
     var list = {
         render: function() {
-            var content = this.props.list.map(function() {
+            var lists = this.props.list.map(function(i) {
                 var innerhtml = '';
                 for (var x in names) {
-                    innerhtml += ' ' + i[x];
+                    innerhtml += (' ' + i[names[x]]);
                 }
                 return <li> {innerhtml} </li>;
             });
@@ -203,11 +209,27 @@ function display_list_of_item(names) {
     return list;
 }
 
-var ProdList = React.createClass(display_list_of_item([
-            'name_es', 'name_zh']));
+var ProdList = React.createClass(display_list_of_item(PROD_KEYS));
+
+var Test = React.createClass({
+    render: function() {
+        return <DeclaredItem uid="1" />
+    }
+});
 
 var DeclaredItem = React.createClass({
-    fetchcontent: function() {}, 
+    fetchcontent: function() {
+        fetch_and_set_content('/importapi/declaredgood/',
+            setState.bind(this))(this.props.uid);
+        fetch_and_set_content('/importapi/prod?declaring_id=',
+            function(result) {
+                this.setState({'prods': result.result});
+            }.bind(this))(this.props.uid);
+    },
+    getInitialState: function() {
+        this.fetchcontent();
+        return {display_price: '', display_name: '', prods: []};
+    },
     render: function() {
         return (<div>
             <p>{this.state.display_name} {this.state.display_price}</p>

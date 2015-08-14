@@ -30,6 +30,7 @@
         <Route handler={App}>
             <Route path="purchase/:uid" handler={Purchase} />
             <Route path="prod/:uid" handler={ProdBox} />
+            <Route path="test" handler={Test} />
         </Route>
     );
     Router.run(routes, Router.HashLocation, function(Root) {
