@@ -1,13 +1,21 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="UTF-8" />
-    <title>Hello React</title>
+    <meta charset="UTF-8" /> <title>Hello React</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.3/react.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.3/JSXTransformer.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script src="bundle.dev.js" type="text/jsx"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-router/0.13.3/ReactRouter.js" ></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
   </head>
   <body>
     <div id="content"></div>
@@ -18,7 +26,7 @@
     var App = React.createClass({
       render: function() {
         return (
-          <div>
+          <div className="container">
             <h1>App</h1>
             <RouteHandler/>
           </div>
@@ -31,6 +39,7 @@
             <Route path="purchase/:uid" handler={Purchase} />
             <Route path="prod/:uid" handler={ProdBox} />
             <Route path="declared/:uid" handler={DeclaredUI} />
+            <Route path="allprod" handler={ProdList2} />
             <Route path="test" handler={Test} />
         </Route>
     );

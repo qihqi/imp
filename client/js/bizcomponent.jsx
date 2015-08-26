@@ -32,6 +32,8 @@ function fetch_and_set_content(baseurl, callback) {
         $.ajax({
             url: url,
             success: function(data) {
+                console.log(data);
+                console.log(callback);
                 callback(data);
             }.bind(this)
         });
@@ -41,6 +43,59 @@ function fetch_and_set_content(baseurl, callback) {
 function setState(x) {
     this.setState(x);
 }
+
+function displaylist(names, content) {
+    var lists =content.map(function(i) {
+        var innerhtml = '';
+        for (var x in names) {
+            innerhtml += (' ' + i[names[x]]);
+        }
+        return <li> {innerhtml} </li>;
+    });
+    return (<ul>{lists}</ul>);
+}
+
+var ProdList2 = React.createClass({
+    getInitialState: function() {
+        $.ajax({
+            url: '/importapi/prod',
+            success: function(result) {
+                this.setState({list: result.result});
+            }.bind(this)
+        }); 
+        return {list: []};
+    },
+    render: function() {
+        var makerow = function(prod) {
+            return (<tr>
+                <td><a href={"#/prod/"+prod.upi}> edit </a></td>
+                <td>{prod.name_es}</td>
+                <td>{prod.name_zh}</td>
+                <td>{prod.providor_zh}</td>
+                <td>{prod.providor_item_id}</td>
+                <td>{prod.declared_id}</td>
+            </tr>);
+        }
+
+        var rows = this.state.list.map(makerow);
+
+        return (
+            <div> Hello
+            <table className="table">
+            <tr>
+                <th>#</th>
+                <th>name_es</th>
+                <th>name_zh</th>
+                <th>providor_zh</th>
+                <th>providor_item_id</th>
+                <th>declared_id</th>
+            </tr>
+            {rows}
+            </table>
+            </div>);
+    }
+});
+
 
 var Declared = React.createClass({
     fetchcontent: fetch_and_set_content('/importapi/declared/',
@@ -80,9 +135,11 @@ var Declared = React.createClass({
 });
 
 var ProdBox = React.createClass({
-    fetchcontent: fetch_and_set_content('/importapi/prod/', setState.bind(this)),
+    fetchcontent: function(x, callback) {
+        fetch_and_set_content('/importapi/prod/', callback)(x);
+    },
     altercontent: function(){
-        alert('here');
+        console.log(this.state);
         var url = '/importapi/prod/' + this.props.params.uid;
         $.ajax({
             url: url,
@@ -104,12 +161,24 @@ var ProdBox = React.createClass({
     handler: function(key, event) {
         var newstate = {};
         newstate[event.target.name] = event.target.value;
-        setState(newstate);
+        this.setState(newstate);
+    },
+    delete: function() {
+        console.log(this.state);
+        var url = '/importapi/prod/' + this.props.params.uid;
+        $.ajax({
+            url: url,
+            method: 'DELETE',
+            success: function(data) {
+                alert('success');
+            }
+        });
     },
     render: function() {
         return (<form onSubmit={this.submit}>
-            {render_input_for_keys(PROD_KEYS).bind(this)()}
-            <input type="submit"/>
+                {render_input_for_keys(PROD_KEYS).bind(this)()}
+                <input type="submit"/>
+                <button onClick={this.delete}>Delete</button>
             </form>);
     }
 });
@@ -154,9 +223,9 @@ var Purchase = React.createClass({
             </tr>);
         });
         return (
-            <div>
+            <div className="container">
             <PurchaseHeader uid={this.props.params.uid} />
-            <table>
+            <table className="table">
                 <tr>
                     <td>{"名称"}</td>
                     <td>Nombre</td>
@@ -180,7 +249,7 @@ var ProdList = React.createClass(comp.display_list_of_item(PROD_KEYS));
 
 var Test = React.createClass({
     render: function() {
-        return <CreateBox url='/importapi/declaredgood' names={["display_name", "display_price"]} />
+        return <comp.CreateOrUpdateBox url='/importapi/declaredgood' names={["display_name", "display_price"]} />
     }
 });
 
@@ -218,3 +287,5 @@ window.Purchase = Purchase;
 window.DeclaredUI = DeclaredUI;
 window.Test = Test;
 window.ProdBox = ProdBox;
+window.ProdList = ProdList;
+window.ProdList2 = ProdList2;
