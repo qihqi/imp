@@ -6,7 +6,7 @@ const PROD_KEYS = [
     "name_zh",
     "providor_zh",
     "providor_item_id",
-    "declared_id"];
+    "declaring_id"];
 
 function render_input_for_keys(keys, classes) {
     return function() {
@@ -56,19 +56,17 @@ function displaylist(names, content) {
 }
 
 var ProdList2 = React.createClass({
-    getInitialState: function() {
-        $.ajax({
-            url: '/importapi/prod',
-            success: function(result) {
-                this.setState({list: result.result});
-            }.bind(this)
-        }); 
-        return {list: []};
-    },
+
     render: function() {
+        var click = this.props.click;
         var makerow = function(prod) {
-            return (<tr>
-                <td><a href={"#/prod/"+prod.upi}> edit </a></td>
+            var clickhandler = function() {
+                console.log('click logger');
+                console.log(prod);
+                click(prod.upi);
+            };
+            return (<tr key={prod.uid}>
+                <td><button onClick={clickhandler}>edit</button></td>
                 <td>{prod.name_es}</td>
                 <td>{prod.name_zh}</td>
                 <td>{prod.providor_zh}</td>
@@ -77,7 +75,7 @@ var ProdList2 = React.createClass({
             </tr>);
         }
 
-        var rows = this.state.list.map(makerow);
+        var rows = this.props.list.map(makerow);
 
         return (
             <div> Hello
@@ -90,9 +88,63 @@ var ProdList2 = React.createClass({
                 <th>providor_item_id</th>
                 <th>declared_id</th>
             </tr>
+            <tbody>
             {rows}
+            </tbody>
             </table>
             </div>);
+    }
+});
+ 
+
+var ShowProd = React.createClass({
+    setCurrent: function(current) {
+        this.setState({current: current});
+    },
+    getAllProd: function() {
+        $.ajax({
+            url: '/importapi/prod',
+            success: function(result) {
+                this.setState({list: result.result});
+            }.bind(this)
+        }); 
+    },
+    getInitialState: function() {
+        this.getAllProd();
+        return {
+            current: 1,
+            list: []
+        }
+    },
+    editProd: function(x) {
+        this.setState({current: x}, function() {
+            this.refs.editbox.fetchnew();
+        }.bind(this));
+    },
+    editedProd: function(newprod) {
+        var newlist = this.state.list.slice();
+        for (var i in newlist) {
+            if (newlist[i].upi == newprod.upi) {
+                newlist[i] = newprod;
+            }
+        }
+        this.setState({'list': newlist});
+    },
+    render: function() {
+        return (<div className="container">
+            <div className="row" >
+            <div className="col-md-4">
+                <div className="myfloat">
+                    <comp.CreateOrUpdateBox url="/importapi/prod" ref="editbox"
+                      names={PROD_KEYS} update={true} uid={this.state.current}
+                      callback={this.editedProd}/>
+                </div>
+            </div>
+            <div className="col-md-8">
+                <ProdList2 list={this.state.list} click={this.editProd}/>
+            </div>
+            </div>
+        </div>);
     }
 });
 
@@ -289,3 +341,4 @@ window.Test = Test;
 window.ProdBox = ProdBox;
 window.ProdList = ProdList;
 window.ProdList2 = ProdList2;
+window.ShowProd= ShowProd;

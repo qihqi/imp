@@ -4,7 +4,10 @@ import csv
 import sys
 import re
 from decimal import Decimal
-from henry.helpers import parse_decimal
+ 
+def parse_decimal(x):
+    x = re.sub(r'[^\d\\.]', '', x)
+    return Decimal(x)
 
 
 

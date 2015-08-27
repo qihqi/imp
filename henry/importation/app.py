@@ -29,7 +29,7 @@ def json_dumps(x):
     return json.dumps(x, cls=ModelEncoder)
 
 
-CONN_STRING = 'mysql+mysqldb://root:wolverineaccess@localhost/import?charset=utf8'
+CONN_STRING = 'sqlite:///hello.db'
 engine = create_engine(CONN_STRING)
 app = Bottle(autojson=False)
 

@@ -23,8 +23,13 @@ function setState(x) {
 //        names <- what are the names for the inputs
 //        update <- used for update
 //        uid <- if is update, the id of the element to be updated
+//        callback <- call with updated version
 
 var CreateOrUpdateBox = React.createClass({
+    fetchnew: function() {
+        query(this.props.url + '/' + this.props.uid,
+            setState.bind(this));
+    },
     getInitialState: function() {
         var x = {};
         this.props.names.forEach(function(name) {
@@ -44,19 +49,18 @@ var CreateOrUpdateBox = React.createClass({
     },
     submit: function(event) {
         event.preventDefault();
-        alert('here');
         var url = this.props.url;
         var method = 'POST';
         if (this.props.update) {
             method = 'PUT';
             url = this.props.url + '/' + this.props.uid;
         }
+        this.props.callback(this.state);
         $.ajax({
             url: url,
             method: method,
             data: JSON.stringify(this.state),
             success: function(data) {
-                alert(JSON.stringify(data));
                 this.setState({});
             }.bind(this)
         });
@@ -66,7 +70,7 @@ var CreateOrUpdateBox = React.createClass({
         var inputs = this.props.names.map(function(name) {
             return <p> {name}: <input name={name} ref={name}
                 value={this.state[name] || ''}
-                onChange={this.onchange.bind(this)}/></p>;
+                onChange={this.onchange}/></p>;
         }.bind(this));
         var value = this.props.update ? 'update' : 'create';
         return (<form onSubmit={this.submit}>
