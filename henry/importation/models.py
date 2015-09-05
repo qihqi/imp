@@ -7,8 +7,8 @@ Base = declarative_base()
 class NUniversalProduct(Base):
     __tablename__ = 'universal_products'
     upi = Column(Integer, primary_key=True, autoincrement=True)
-    name_es = Column(String(20), index=True)  # searchable name
-    name_zh = Column(String(20), index=True)  # searchable name
+    name_es = Column(String(50), index=True)  # searchable name
+    name_zh = Column(String(50), index=True)  # searchable name
 
     providor_zh = Column(String(20), index=True)  # may replace by id
     providor_item_id = Column(String(20))

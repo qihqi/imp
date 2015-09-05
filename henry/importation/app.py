@@ -10,6 +10,7 @@ from .bottlerest import DBApi, RestApiApp
 from .models import NUniversalProduct, NPurchase, NPurchaseItem, Base, NDeclaredGood
 from .api import get_report
 from sqlalchemy import create_engine
+from henry.constants import CONN_STRING
 import json
 
 class ModelEncoder(json.JSONEncoder):
@@ -29,7 +30,6 @@ def json_dumps(x):
     return json.dumps(x, cls=ModelEncoder)
 
 
-CONN_STRING = 'sqlite:///hello.db'
 engine = create_engine(CONN_STRING)
 app = Bottle(autojson=False)
 
