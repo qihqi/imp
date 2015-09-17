@@ -99,16 +99,6 @@ function render_input_for_keys(keys, classes) {
 }
 
 
-var SelectBox = React.createClass({
-    render: function() {
-        var options = this.props.options.map(function(option) {
-            return <option value="{option.value}">{option.display}</option>;
-        });
-        <select ref={this.props.ref} onChange={this.props.handler}>
-            {options}
-        </select>
-    }
-});
 
 function display_list_of_item(names) {
     var list = {
@@ -126,6 +116,39 @@ function display_list_of_item(names) {
     return list;
 }
 
+// props input:
+//   items: an array of items to be displayed
+//   name: name of the select field
+//   size: size of select field
+//   callback: if an item is selected, callback is called with it.
+//   itemdisplay: how ot display the item given in items.
+var SelectBox = React.createClass({
+    getInitialState: function() {
+        return {'current': '0'};
+    },
+    onchange: function(event) {
+        this.setState({current: event.target.value});
+        var index = parseInt(event.target.value);
+        console.log(this.props.callback);
+        if (this.props.callback != null) {
+            console.log('here');
+            this.props.callback(this.props.items[index]);
+        }
+    },
+    render: function() {
+        var display = this.props.itemdisplay;
+        var items = this.props.items.map(function(i, index) {
+            return <option value={index}>{display(i)}</option>;
+        });
+        return (<select size={this.props.size} value={this.state.current} 
+                        onChange={this.onchange} name={this.props.name}>
+            {items}
+        </select>);
+    }
+});
+
 module.exports.CreateOrUpdateBox = CreateOrUpdateBox;
 module.exports.fetch_and_set_content = fetch_and_set_content;
 module.exports.display_list_of_item = display_list_of_item;
+module.exports.SelectBox = SelectBox;
+module.exports.query = query;

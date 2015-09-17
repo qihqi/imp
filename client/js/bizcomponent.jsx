@@ -301,7 +301,10 @@ var ProdList = React.createClass(comp.display_list_of_item(PROD_KEYS));
 
 var Test = React.createClass({
     render: function() {
-        return <comp.CreateOrUpdateBox url='/importapi/declaredgood' names={["display_name", "display_price"]} />
+    return <div>
+        <ProductSearcher onSelectProduct={function(x){ console.log(x);}}/>
+        <ProdCantPriceInput />
+    </div>;
     }
 });
 
@@ -329,6 +332,99 @@ var DeclaredItem = React.createClass({
             <p>{this.state.display_name} {this.state.display_price}</p>
             <ProdList list={this.state.prods} />
         </div>);
+    }
+});
+
+
+var ProductSearcher = React.createClass({
+    getAllProduct: function(ready) {
+        comp.query('/importapi/prod', function(result) {
+            this.allprod = {};
+            for (var x in result.result) {
+                var item = result.result[x];
+                if (!(item.providor_zh in this.allprod)) {
+                    this.allprod[item.providor_zh] = [];
+                }
+                this.allprod[item.providor_zh].push(item);
+            }
+            console.log(this.allprod);
+            ready();
+        }.bind(this));
+    },
+    getInitialState: function() {
+        this.getAllProduct(function() {
+            var providors = Object.keys(this.allprod);
+            this.setState({'providors': providors});    
+        }.bind(this));
+        return {providors: [], products: []};
+    }, 
+    onProvidorChange: function(prov) {
+        var prods = this.allprod[prov] || [];
+        console.log(this.allprod);
+        this.setState({products: prods});
+    },
+    displayProduct: function(p) {
+        var chname = p.name_zh || p.providor_item_id;
+        return chname + " " + p.name_es;
+    },
+    displayProvidor: function(p) {
+        return p; // providor is just string
+    },
+    render: function() {
+        return (<div className="container">
+            <div className="row">
+            <comp.SelectBox items={this.state.providors}
+                       size="10"
+                       name="providor"
+                       callback={this.onProvidorChange}
+                       itemdisplay={this.displayProvidor}  />
+            </div>
+            <div className="row">
+            <comp.SelectBox items={this.state.products}
+                       size="20"
+                       name="product"
+                       callback={this.props.onSelectProduct}
+                       itemdisplay={this.displayProduct}  />
+            </div>
+           </div>);
+    }
+});
+
+var ProdCantPriceInput = React.createClass({
+    getInitialState: function() {
+        return {prod: this.props.prod, cant: 0, price: 0};
+    },
+    onChangeCant: function(event) {
+        this.setState({cant: event.target.value}); 
+    },
+    onChangePrice: function(event) {
+        this.setState({price: event.target.value}); 
+    },
+    render: function() {
+        var prod = this.state.prod;
+        var prodname = prod.name_zh || (prod.providor_id + " " + prod.providor_item_id);
+        var total = Math.round(this.state.cant * this.state.price * 100) / 100;
+        return (
+        <p><div>{prodname}</div> 
+            <input value={this.state.cant} onChange={this.onChangeCant}/> 
+            <input value={this.state.price} onChange={this.onChangePrice}/>
+            <div>{total}</div></p>
+        );
+    }
+});
+
+var CreateInvBox = React.createClass({
+    render: function() {
+        return <div className="row">
+            <div className="col-md-4">
+                <ProductSearcher onSelectProduct={this.onSelectProduct} />
+            <div className="row">
+                <ProdCantPriceInput prod={this.state.currentProd} />
+            </div> 
+            <div className="row">
+                Hola
+            </div> 
+        </div>;
     }
 });
 
