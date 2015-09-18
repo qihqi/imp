@@ -302,8 +302,7 @@ var ProdList = React.createClass(comp.display_list_of_item(PROD_KEYS));
 var Test = React.createClass({
     render: function() {
     return <div>
-        <ProductSearcher onSelectProduct={function(x){ console.log(x);}}/>
-        <ProdCantPriceInput />
+        <CreateInvBox />
     </div>;
     }
 });
@@ -335,6 +334,10 @@ var DeclaredItem = React.createClass({
     }
 });
 
+function displayProduct(p) {
+    var chname = p.name_zh || p.providor_item_id;
+    return chname + " " + p.name_es;
+}
 
 var ProductSearcher = React.createClass({
     getAllProduct: function(ready) {
@@ -362,13 +365,9 @@ var ProductSearcher = React.createClass({
         var prods = this.allprod[prov] || [];
         console.log(this.allprod);
         this.setState({products: prods});
-    },
-    displayProduct: function(p) {
-        var chname = p.name_zh || p.providor_item_id;
-        return chname + " " + p.name_es;
-    },
-    displayProvidor: function(p) {
-        return p; // providor is just string
+        if (prods.length > 0) {
+            this.props.onSelectProduct(prods[0]);
+        }
     },
     render: function() {
         return (<div className="container">
@@ -377,14 +376,14 @@ var ProductSearcher = React.createClass({
                        size="10"
                        name="providor"
                        callback={this.onProvidorChange}
-                       itemdisplay={this.displayProvidor}  />
+                       itemdisplay={function(x){return x;}}  />
             </div>
             <div className="row">
             <comp.SelectBox items={this.state.products}
                        size="20"
                        name="product"
                        callback={this.props.onSelectProduct}
-                       itemdisplay={this.displayProduct}  />
+                       itemdisplay={displayProduct}  />
             </div>
            </div>);
     }
@@ -392,7 +391,12 @@ var ProductSearcher = React.createClass({
 
 var ProdCantPriceInput = React.createClass({
     getInitialState: function() {
-        return {prod: this.props.prod, cant: 0, price: 0};
+        return {cant: 0, price: 0};
+    },
+    focus: function() {
+        var cant = React.findDOMNode(this.refs.cant);
+        cant.focus();
+        cant.select();
     },
     onChangeCant: function(event) {
         this.setState({cant: event.target.value}); 
@@ -400,30 +404,98 @@ var ProdCantPriceInput = React.createClass({
     onChangePrice: function(event) {
         this.setState({price: event.target.value}); 
     },
+    focusPrice: function(event) {
+        if (event.nativeEvent.keyCode == 13) {
+            event.preventDefault();
+            var price = React.findDOMNode(this.refs.price);
+            price.focus();
+            price.select();
+        }
+    },
+    exportItem: function(event) {
+        if (event.nativeEvent.keyCode == 13) {
+            event.preventDefault();
+            this.props.callback({
+                prod: this.props.prod,
+                cant: this.state.cant,
+                price: this.state.price
+            });
+        }
+    },
     render: function() {
-        var prod = this.state.prod;
+        var prod = this.props.prod || {};
         var prodname = prod.name_zh || (prod.providor_id + " " + prod.providor_item_id);
         var total = Math.round(this.state.cant * this.state.price * 100) / 100;
         return (
-        <p><div>{prodname}</div> 
-            <input value={this.state.cant} onChange={this.onChangeCant}/> 
-            <input value={this.state.price} onChange={this.onChangePrice}/>
-            <div>{total}</div></p>
+            <table>
+            <tbody>
+            <tr>
+                <td>{prodname}</td>
+                <td><input ref="cant" value={this.state.cant} onChange={this.onChangeCant} 
+                           onKeyDown={this.focusPrice} /> </td>
+                <td><input ref="price" value={this.state.price} 
+                           onChange={this.onChangePrice} onKeyDown={this.exportItem}/></td>
+                <td>{total}</td>
+            </tr>
+            </tbody>
+            </table>
         );
     }
 });
 
+var ItemList = React.createClass({
+    render: function() {
+        var rows = this.props.items.map(function(item) {
+            return <tr>
+                <td>{displayProduct(item.prod)}</td>
+                <td>{item.price}</td>
+                <td>{item.cant}</td>
+                <td>{Math.round(item.cant *  item.price * 100) / 100}</td>
+            </tr>;
+        });
+        return <table>
+            <thead>
+                <tr>
+                    <th>{"产品"}</th>
+                    <th>{"价格"}</th>
+                    <th>{"数量"}</th>
+                    <th>{"一共"}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows}
+            </tbody>
+        </table>
+    }
+});
+
 var CreateInvBox = React.createClass({
+    getInitialState: function() {
+        return {currentProd: {}, items: []};
+    },
+    onSelectProduct: function(prod) {
+        console.log("onSelectProducto");
+        console.log(prod);
+        this.setState({currentProd: prod});
+        this._input.focus();
+    },
+    addItem: function(item) {
+        var arr = this.state.items.concat([item]);
+        this.setState({items: arr});
+    },
+    setInputRef: function(ref) {
+        this._input = ref;
+    },
     render: function() {
         return <div className="row">
-            <div className="col-md-4">
+            <div className="col-xs-4 col-md-4">
                 <ProductSearcher onSelectProduct={this.onSelectProduct} />
-            <div className="row">
-                <ProdCantPriceInput prod={this.state.currentProd} />
-            </div> 
-            <div className="row">
-                Hola
-            </div> 
+            </div>
+            <div className="col-xs-8 col-md-8">
+                <ProdCantPriceInput prod={this.state.currentProd} 
+                                    ref={this.setInputRef} callback={this.addItem} />
+                <ItemList items={this.state.items} />
+            </div>
         </div>;
     }
 });

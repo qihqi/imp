@@ -129,9 +129,7 @@ var SelectBox = React.createClass({
     onchange: function(event) {
         this.setState({current: event.target.value});
         var index = parseInt(event.target.value);
-        console.log(this.props.callback);
         if (this.props.callback != null) {
-            console.log('here');
             this.props.callback(this.props.items[index]);
         }
     },
