@@ -371,6 +371,7 @@ var ProductSearcher = React.createClass({
     },
     render: function() {
         return (<div className="container">
+            <div className="row"><button onClick={this.getAllProduct}>Reload</button></div>
             <div className="row">
             <comp.SelectBox items={this.state.providors}
                        size="10"
@@ -483,6 +484,16 @@ var CreateInvBox = React.createClass({
         var arr = this.state.items.concat([item]);
         this.setState({items: arr});
     },
+    saveInv: function() {
+        $.ajax({
+            method: 'POST',
+            data: JSON.stringify(this.state.items),
+            url: '/importapi/purchase',
+            success: function(r) {
+                alert(r.uid);
+            }
+        });
+    },
     setInputRef: function(ref) {
         this._input = ref;
     },
@@ -492,6 +503,7 @@ var CreateInvBox = React.createClass({
                 <ProductSearcher onSelectProduct={this.onSelectProduct} />
             </div>
             <div className="col-xs-8 col-md-8">
+                <button onClick={this.saveInv}>SAVE</button>
                 <ProdCantPriceInput prod={this.state.currentProd} 
                                     ref={this.setInputRef} callback={this.addItem} />
                 <ItemList items={this.state.items} />
@@ -510,3 +522,4 @@ window.ProdBox = ProdBox;
 window.ProdList = ProdList;
 window.ProdList2 = ProdList2;
 window.ShowProd= ShowProd;
+window.CreateInvBox = CreateInvBox;

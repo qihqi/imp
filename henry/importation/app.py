@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+import datetime
 import csv
 import decimal
 from bottle import Bottle, request, static_file, JSONPlugin
@@ -48,6 +49,31 @@ def get_purchase(pid):
     thing = get_report(session, pid)
     print thing.serialize()
     return thing.serialize()
+
+
+@app.post('/importapi/purchase')
+def save_purchase():
+    session = api.sessionmaker()
+    rows = json.loads(request.body.read())
+
+    purchase = NPurchase()
+    session.add(purchase)
+    session.flush()
+    def make_item(r):
+        return NPurchaseItem(
+            upi=r['prod']['upi'],
+            quantity=Decimal(r['cant']),
+            price_rmb=Decimal(r['price']),
+            purchase_id = purchase.uid)
+
+    items = map(make_item, rows)
+    total = sum((r.price_rmb * r.quantity for r in items))
+    purchase.timestamp = datetime.datetime.now()
+    purchase.total_rmb = total
+
+    map(session.add, items)
+    session.commit()
+    return {'uid': purchase.uid}
 
 
 @app.get('/<path:path>')
