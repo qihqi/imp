@@ -65,6 +65,11 @@ var CreateOrUpdateBox = React.createClass({
             }.bind(this)
         });
     },
+    setDeclared: function(x) {
+        var state = {};
+        state[this.props.optionbox.name] = x.uid;
+        this.setState(state);
+    },
     render: function() {
         console.log(this.state);
         var inputs = this.props.names.map(function(name) {
@@ -72,6 +77,16 @@ var CreateOrUpdateBox = React.createClass({
                 value={this.state[name] || ''}
                 onChange={this.onchange}/></p>;
         }.bind(this));
+        if (this.props.optionbox) {
+            inputs.push(<SelectBox name={this.props.optionbox.name} 
+                        value={this.state[this.props.optionbox.name]}  
+                        items={this.props.optionbox.items}
+                        itemdisplay={this.props.optionbox.display}
+                        size={this.props.optionbox.size}
+                        callback={this.setDeclared}
+                    /> );
+
+        }
         var value = this.props.update ? 'update' : 'create';
         return (<form onSubmit={this.submit}>
             {inputs}

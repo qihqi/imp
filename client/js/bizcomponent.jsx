@@ -8,6 +8,11 @@ const PROD_KEYS = [
     "providor_item_id",
     "declaring_id"];
 
+const DECLARED_KEYS = [
+    "display_name", 
+    "display_price" 
+];
+
 function render_input_for_keys(keys, classes) {
     return function() {
         var values = keys.map(function(name) {
@@ -71,7 +76,7 @@ var ProdList2 = React.createClass({
                 <td>{prod.name_zh}</td>
                 <td>{prod.providor_zh}</td>
                 <td>{prod.providor_item_id}</td>
-                <td>{prod.declared_id}</td>
+                <td>{prod.declaring_id}</td>
             </tr>);
         }
 
@@ -108,12 +113,19 @@ var ShowProd = React.createClass({
                 this.setState({list: result.result});
             }.bind(this)
         }); 
+        $.ajax({
+            url: '/importapi/declaredgood',
+            success: function(result) {
+                this.setState({declaredgoods: result.result});
+            }.bind(this)
+        }); 
     },
     getInitialState: function() {
         this.getAllProd();
         return {
             current: 1,
-            list: []
+            list: [],
+            declaredgoods: []
         }
     },
     editProd: function(x) {
@@ -130,14 +142,27 @@ var ShowProd = React.createClass({
         }
         this.setState({'list': newlist});
     },
+    displayDeclared: function(x) {
+        return x.display_name;
+    },
+    setDeclared: function(x) {
+        this.declared = x.uid;
+    },
     render: function() {
+        var optionbox = {
+            name: 'declaring_id', 
+            items: this.state.declaredgoods, 
+            display: this.displayDeclared,
+            size: 1
+        };
         return (<div className="container">
             <div className="row" >
             <div className="col-md-4">
                 <div className="myfloat">
                     <comp.CreateOrUpdateBox url="/importapi/prod" ref="editbox"
                       names={PROD_KEYS} update={true} uid={this.state.current}
-                      callback={this.editedProd}/>
+                      optionbox={optionbox}
+                      callback={this.editedProd} />
                 </div>
             </div>
             <div className="col-md-8">
@@ -302,7 +327,7 @@ var ProdList = React.createClass(comp.display_list_of_item(PROD_KEYS));
 var Test = React.createClass({
     render: function() {
     return <div>
-        <CreateInvBox />
+        <AllDeclared />
     </div>;
     }
 });
@@ -335,7 +360,7 @@ var DeclaredItem = React.createClass({
 });
 
 function displayProduct(p) {
-    var chname = p.name_zh || p.providor_item_id;
+    var chname = '(' + (p.providor_item_id || '') + ')' + p.name_zh;
     return chname + " " + p.name_es;
 }
 
@@ -351,14 +376,12 @@ var ProductSearcher = React.createClass({
                 this.allprod[item.providor_zh].push(item);
             }
             console.log(this.allprod);
-            ready();
-        }.bind(this));
-    },
-    getInitialState: function() {
-        this.getAllProduct(function() {
             var providors = Object.keys(this.allprod);
             this.setState({'providors': providors});    
         }.bind(this));
+    },
+    getInitialState: function() {
+        this.getAllProduct();
         return {providors: [], products: []};
     }, 
     onProvidorChange: function(prov) {
@@ -497,18 +520,72 @@ var CreateInvBox = React.createClass({
     setInputRef: function(ref) {
         this._input = ref;
     },
+    loadInv: function() {
+        var code = React.findDOMNode(this.refs.code).value;
+        comp.query('/importapi/purchaseitem2/' + code, function(result) {
+            this.setState({'items': result.result});
+        }.bind(this));
+    },
     render: function() {
         return <div className="row">
             <div className="col-xs-4 col-md-4">
                 <ProductSearcher onSelectProduct={this.onSelectProduct} />
             </div>
             <div className="col-xs-8 col-md-8">
+                <input ref="code" />
+                <button onClick={this.loadInv}>LOAD</button>
                 <button onClick={this.saveInv}>SAVE</button>
                 <ProdCantPriceInput prod={this.state.currentProd} 
                                     ref={this.setInputRef} callback={this.addItem} />
                 <ItemList items={this.state.items} />
             </div>
         </div>;
+    }
+});
+
+var DeclaredGood = React.createClass({
+    render: function() {
+        var lists = this.props.prods.map(function(i) {
+            var name = '(' + i.providor_zh + ')' + i.name_zh;
+            return <li> {name} </li>;
+        });
+        return <div>
+            <comp.CreateOrUpdateBox url="/importapi/declaredgood" ref="editbox"
+                names={DECLARED_KEYS} update={true} uid={this.props.uid} 
+                callback={function(){}}/>
+            <ul> {lists} </ul>
+       </div>;
+    }
+});
+
+var AllDeclared = React.createClass({
+    getProd: function() {
+        comp.query('/importapi/prod', function(result) {
+            var prods = {};
+            for (var x in result.result) {
+                var i = result.result[x];
+                if (!i.declaring_id) {
+                    continue;
+                }
+                if (!(i.declaring_id in prods)) {
+                    prods[i.declaring_id] = [];
+                }
+                prods[i.declaring_id].push(i);
+            }
+            this.setState({ids: Object.keys(prods), prods: prods});
+        }.bind(this));
+    },
+    getInitialState: function() {
+        this.getProd();
+        return {ids: [], prods:{}};
+    },
+    render: function() {
+        var mapped = this.state.prods;
+        console.log(mapped);
+        var all = this.state.ids.map(function(id) {
+            return <DeclaredGood uid={id} prods={mapped[id]} />;
+        });
+        return <div> {all} </div>;
     }
 });
 

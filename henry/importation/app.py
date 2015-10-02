@@ -64,8 +64,7 @@ def save_purchase():
             upi=r['prod']['upi'],
             quantity=Decimal(r['cant']),
             price_rmb=Decimal(r['price']),
-            purchase_id = purchase.uid)
-
+            purchase_id = purchase.uid) 
     items = map(make_item, rows)
     total = sum((r.price_rmb * r.quantity for r in items))
     purchase.timestamp = datetime.datetime.now()
@@ -74,6 +73,28 @@ def save_purchase():
     map(session.add, items)
     session.commit()
     return {'uid': purchase.uid}
+
+
+@app.get('/importapi/purchaseitem2/<uid>')
+def get_purchase(uid):
+    session = api.sessionmaker()
+    items = session.query(NPurchaseItem, NUniversalProduct
+            ).filter(NPurchaseItem.upi == NUniversalProduct.upi).filter_by(purchase_id=uid)
+    def make_item(r):
+        item, prod = r
+        return {
+                'prod': {
+                    'upi': prod.upi,
+                    'name_zh': prod.name_zh,
+                    'name_es': prod.name_es,
+                    'providor_zh': prod.providor_zh,
+                    'providor_item_id': prod.providor_item_id,
+                },
+                'cant': item.quantity,
+                'price': item.price_rmb
+            }
+    items = map(make_item, items)
+    return {'result': items}
 
 
 @app.get('/<path:path>')
