@@ -33,12 +33,34 @@ def group_by_price(new_items):
 def jin_to_kg(item):
     if item.unit == 'jin':
         item.unit = 'kg'
-        item.quantity /= 2
-        item.price *= 2
+        mult = 2
     if item.unit == 'cizhu':
         item.unit = 'kg'
-        item.quantity = item.quantity / 67 * 30
-        item.price = item.price * 67 / 30 
+        mult = Decimal(67) / 30
+    if item.unit == 'cen':
+        item.unit = 'ciento'
+        mult = 100
+    if item.unit == '-50y':
+        item.unit = 'rollo de 50 yardas'
+        mult = 50 
+    if item.unit == '-1000ge':
+        item.unit = 'mil'
+        mult = 1000 
+    if item.unit == '-15y':
+        item.unit = 'paquete de 15 yardas'
+        mult = 15 
+    if item.unit == 'julia':
+        item.unit = 'kg'
+        mult = Decimal(28000) / 270
+    if item.unit == 'wbao':
+        item.unit = 'kg'
+        mult = Decimal(1414) / 480
+    if item.unit == 'leiyu':
+        item.unit = 'kg'
+        mult = Decimal(235) / 118
+
+    item.quantity /= mult
+    item.price *= mult
     return item
 
 
