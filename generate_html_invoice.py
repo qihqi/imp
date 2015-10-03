@@ -28,9 +28,10 @@ def group_by_price(new_items):
             result[desc] = i
     for x in result.values():
         x.comment = ', '.join(x.comment)
-    return sorted(result.values(), key=lambda i: (i.providor_zh, i.display))
+    return result.values()
 
 def jin_to_kg(item):
+    mult = 1
     if item.unit == 'jin':
         item.unit = 'kg'
         mult = 2
@@ -49,15 +50,26 @@ def jin_to_kg(item):
     if item.unit == '-15y':
         item.unit = 'paquete de 15 yardas'
         mult = 15 
+    if item.unit == '-100y':
+        item.unit = 'rollos de 100 yardas'
+        mult = 100 
     if item.unit == 'julia':
         item.unit = 'kg'
         mult = Decimal(28000) / 270
     if item.unit == 'wbao':
         item.unit = 'kg'
-        mult = Decimal(1414) / 480
+        mult = Decimal(1414) / 450
     if item.unit == 'leiyu':
         item.unit = 'kg'
         mult = Decimal(235) / 118
+    if item.unit == 'zhuoxin':
+        item.unit = 'kg'
+        mult = Decimal(50902) / 120
+    if item.unit == '-12ge':
+        item.unit = 'dozen'
+        mult = 12
+    if item.unit.isdigit():
+        item.unit = 'paquete de ' + item.unit
 
     item.quantity /= mult
     item.price *= mult
@@ -151,10 +163,10 @@ def item_to_html(items):
     
 def main():
     new_items = csvsource(sys.argv[1])
-    # new_items = map(jin_to_kg, new_items)
-    # new_items = group_by_price(new_items)
+    new_items = map(jin_to_kg, new_items)
+    new_items = group_by_price(new_items)
     # item_to_html(new_items)
-    item_to_csv(new_items)
+    item_to_csv(sorted(new_items, key=lambda i: (i.providor_zh, i.unit, i.price)))
 
 
 main()
