@@ -1,0 +1,54 @@
+<html>
+<head>
+    <style>
+    .centered {
+        margin-left: auto;
+        margin-right:auto;
+    }
+    table {
+       align: center;
+    }
+    td.num {
+       text-align: right;
+    }
+    </style>
+    <meta charset="UTF-8"> 
+</head>
+<body>
+
+<div class="centered" style="text-align:center;">
+<h2>YIWU RIYAO IMP&EXP.CO.LTD</h2>
+<h4>ROOM 8511.5F,  CUP INTERNATIONAL BUILDING NO1339  CHOUZHOU  ROAD, YIWU ZHEJIANG CHINA</h4>
+<h4>TEL: 0086-579-85314583  FAX:0086-579-85436673</h4>
+</div>
+
+    <hr />
+    <div class="centered" >
+    <table border="1" class="centered">
+    <tr> 
+        <th>Item</th>
+        <th>Description</th>
+        <th class="num">Quantity</th>
+        <th>Unit</th>
+        <th class="num">Price(RMB)</th>
+        <th class="num">Amount(RMB)</th>
+    </tr> 
+    {% for item in items %}
+    <tr>
+        <td>{{ item.id or ""}}</td>
+        <td>{{ item.display }} </td>
+        <td class="num">{{ item.quantity }} </td>
+        <td>{{ item.unit }} </td>
+        <td class="num">{{ item.price }} </td>
+        <td class="num">{{ item.amount }} </td>
+    </tr>
+    {% endfor %}
+    </table>
+    <hr />
+    <p>Total FOB RMB: {{ total_rmb }} 
+    <p>Total FOB USD: {{ total_usd }} *
+    <p> * Using conversation rate of 1USD = {{rate}}RMB
+    </div>
+</body>
+</html>
+    

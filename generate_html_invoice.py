@@ -2,8 +2,7 @@
 import csv
 import sys
 from decimal import Decimal
-from henry.importation.app import api
-from henry.importation.models import *
+TWO = Decimal('0.01')
 
 class Item:
     def __init__(self, display=None, quantity=None, price=None, 
@@ -19,6 +18,7 @@ class Item:
 def group_by_price(new_items):
     result = {}
     for i in new_items:
+        # desc = (i.display, i.unit, i.price)
         desc = (i.providor_zh, i.display, i.unit, i.price)
         if desc in result:  
             result[desc].comment.append(i.comment)
@@ -29,6 +29,22 @@ def group_by_price(new_items):
     for x in result.values():
         x.comment = ', '.join(x.comment)
     return result.values()
+
+def group_by_comment(items):
+    result = {}
+    for i in items:
+        # desc = (i.display, i.unit, i.price)
+        desc = i.comment
+        if desc in result:  
+            result[desc].price.append(i.price)
+            result[desc].quantity += i.quantity
+        else:
+            i.price= [i.price]
+            result[desc] = i
+    for x in result.values():
+        x.price = min(x.price)
+    return result.values()
+
 
 def jin_to_kg(item):
     mult = 1
@@ -61,7 +77,7 @@ def jin_to_kg(item):
         mult = Decimal(1414) / 450
     if item.unit == 'leiyu':
         item.unit = 'kg'
-        mult = Decimal(235) / 118
+        mult = Decimal(235) / Decimal('147.5')
     if item.unit == 'zhuoxin':
         item.unit = 'kg'
         mult = Decimal(50902) / 120
@@ -75,8 +91,19 @@ def jin_to_kg(item):
     item.price *= mult
     return item
 
+def package(item):
+    if item.unit.startswith('-'):
+        cant = int(item.unit[1:-1])
+        item.unit = 'paquete de {} tiras'.format(cant)
+        item.quantity /= cant
+        item.price *= cant 
+    return item
+
 
 def dbsource(pid):
+    from henry.importation.app import api
+    from henry.importation.models import (NDeclaredGood, NUniversalProduct,
+            NPurchaseItem)
     session = api.sessionmaker()
     declared = {u.uid: u for u in session.query(NDeclaredGood)}
     prods = {u.upi: u for u in session.query(NUniversalProduct)}
@@ -142,31 +169,23 @@ def item_to_csv(items):
 
 
 def item_to_html(items):
-    # total = sum((price(i) * quantity(i) for i in items))
-    # print '<p> Total %.2f </p>' % total
-    print '<html><body>'
-    print '<meta charset="UTF-8"> '
-    print '<table>'
-    for item in items:
-        print '<tr>'
-        print '<td>', item.providor_zh.encode('utf8'), '</td>'
-        print '<td>', item.display, '</td>'
-        print '<td>', item.quantity, '</td>'
-        print '<td>', item.unit, '</td>'
-        print '<td>', item.price, '</td>'
-        print '<td>', item.price * item.quantity, '</td>'
-        print '<td>', item.comment, '</td>'
-        print '</tr>'
-    print '</table>'
-    print '</body></html>'
+    items = list(items)
+    total = 0
+    for i in items:
+        i.price = i.price.quantize(TWO)
+        i.amount = (i.price * i.quantity).quantize(TWO)
+        total += i.amount
+    rate = Decimal('6.18')
+    total_usd = (total / rate).quantize(TWO)
+    from jinja2 import Template
+    with open('html_inv_temp.html') as f:
+        t = Template(f.read())
+        print t.render(items=items, total_rmb=total, total_usd=total_usd, rate=rate)
 
     
 def main():
     new_items = csvsource(sys.argv[1])
-    new_items = map(jin_to_kg, new_items)
-    new_items = group_by_price(new_items)
-    # item_to_html(new_items)
-    item_to_csv(sorted(new_items, key=lambda i: (i.providor_zh, i.unit, i.price)))
+    item_to_html(new_items)
 
 
 main()
