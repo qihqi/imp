@@ -4,14 +4,21 @@ import sys
 from decimal import Decimal
 TWO = Decimal('0.01')
 
+def int_or_none(x):
+    try:
+        return int(x)
+    except:
+        return None
+
 class Item:
     def __init__(self, display=None, quantity=None, price=None, 
-            unit=None, comment=None, providor_zh=None):
+            unit=None, comment=None, box=None, providor_zh=None):
         self.display = display
         self.quantity = quantity
         self.price = price
         self.unit = unit
         self.comment = comment
+        self.box = box
         self.providor_zh = providor_zh
 
 
@@ -158,34 +165,61 @@ def csvsource(path):
                     quantity=Decimal(line[2]),
                     unit=line[3],
                     price=Decimal(line[4]),
-                    comment=line[6].decode('utf8'))
+                    box=int_or_none(line[6]),
+                    comment=line[7].decode('utf8'))
 
 def item_to_csv(items):
     writer = csv.writer(sys.stdout)
     for i in items:
         writer.writerow([
             i.providor_zh.encode('utf8'), i.display, i.quantity, 
-            i.unit, i.price, i.price*i.quantity, i.comment.encode('utf8')])
+            i.unit, i.price, i.price*i.quantity, i.box, i.comment.encode('utf8')])
 
-
-def item_to_html(items):
-    items = list(items)
-    total = 0
+def normalize_items(items):
     for i in items:
         i.price = i.price.quantize(TWO)
         i.amount = (i.price * i.quantity).quantize(TWO)
-        total += i.amount
+        yield i
+
+def item_to_html(items):
     rate = Decimal('6.18')
-    total_usd = (total / rate).quantize(TWO)
+    total = sum((i.amount for i in items))
+    total_usd = ( total / rate).quantize(TWO)
     from jinja2 import Template
     with open('html_inv_temp.html') as f:
         t = Template(f.read())
         print t.render(items=items, total_rmb=total, total_usd=total_usd, rate=rate)
 
+class Meta(object):
+    pass
+
+def item_to_packing_list(items):
+    from jinja2 import Template
+    boxes = sum((i.box for i in items if i.box is not None))
+    weights = boxes * 30
+    groups = []
+    sub = None
+    for i in items:
+        if i.box:
+            if sub:
+                groups.append(sub)
+            sub = Meta()
+            sub.box = i.box
+            sub.items = []
+        sub.items.append(i)
+
+    with open('html_plist_temp.html') as f:
+        t = Template(f.read())
+        print t.render(items=groups, boxes=boxes, weight=weights)
     
 def main():
     new_items = csvsource(sys.argv[1])
+    new_items = list(normalize_items(new_items))
+    # new_items = sorted(new_items, key=lambda i: i.providor_zh)
+    #item_to_csv(new_items)
     item_to_html(new_items)
+    #item_to_packing_list(new_items)
+
 
 
 main()
