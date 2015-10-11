@@ -35,7 +35,11 @@
     </tr> 
     {% for sub in items %}
     <tr>
-        <td>{{ sub.id or ""}}</td>
+        <td>
+            {% for i in sub.items %}
+            {{i.uid}}<br/>
+            {% endfor %}
+        </td>
         <td>
             {% for i in sub.items %}
             {{i.display}}<br/>
@@ -52,7 +56,7 @@
             {% endfor %}
         </td>
         <td class="num">{{ sub.box or ""}} </td>
-        <td class="num">{{ ((sub.box or 0)* 30) or ""}} </td>
+        <td class="num">{{ sub.weight or ((sub.box or 0)* 30) or ""}} </td>
     </tr>
     {% endfor %}
     </table>

@@ -2,7 +2,11 @@
 import csv
 import sys
 from decimal import Decimal
+import re
 TWO = Decimal('0.01')
+
+def getint(x):
+    return int(re.sub(r'[^\d]', '', x))
 
 def int_or_none(x):
     try:
@@ -11,8 +15,9 @@ def int_or_none(x):
         return None
 
 class Item:
-    def __init__(self, display=None, quantity=None, price=None, 
+    def __init__(self, uid, display=None, quantity=None, price=None, 
             unit=None, comment=None, box=None, providor_zh=None):
+        self.uid= uid
         self.display = display
         self.quantity = quantity
         self.price = price
@@ -41,15 +46,18 @@ def group_by_comment(items):
     result = {}
     for i in items:
         # desc = (i.display, i.unit, i.price)
-        desc = i.comment
+        desc = getint(i.comment)
         if desc in result:  
             result[desc].price.append(i.price)
             result[desc].quantity += i.quantity
+            result[desc].comment.append(i.comment)
         else:
-            i.price= [i.price]
+            i.price = [i.price]
+            i.comment = [i.comment]
             result[desc] = i
     for x in result.values():
         x.price = min(x.price)
+        x.comment = ', '.join(x.comment)
     return result.values()
 
 
@@ -159,20 +167,27 @@ def csvsource(path):
     with open(path) as f:
         reader = csv.reader(f, delimiter=',', quotechar='"')
         for line in reader:
+            _, uid, providor_zh, display, quantity, unit, price, _, box, comment = line
+            providor_zh = providor_zh.decode('utf8')
+            quantity = Decimal(quantity)
+            price = Decimal(price)
+            box = int_or_none(box)
+            comment = comment.decode('utf8')
             yield Item(
-                    providor_zh=line[0].decode('utf8'),
-                    display=line[1],
-                    quantity=Decimal(line[2]),
-                    unit=line[3],
-                    price=Decimal(line[4]),
-                    box=int_or_none(line[6]),
-                    comment=line[7].decode('utf8'))
+                    uid=uid,
+                    providor_zh=providor_zh,
+                    display=display,
+                    quantity=quantity,
+                    unit=unit,
+                    price=price,
+                    box=box,
+                    comment=comment)
 
 def item_to_csv(items):
     writer = csv.writer(sys.stdout)
     for i in items:
         writer.writerow([
-            i.providor_zh.encode('utf8'), i.display, i.quantity, 
+            '', i.uid, i.providor_zh.encode('utf8'), i.display, i.quantity, 
             i.unit, i.price, i.price*i.quantity, i.box, i.comment.encode('utf8')])
 
 def normalize_items(items):
@@ -181,22 +196,21 @@ def normalize_items(items):
         i.amount = (i.price * i.quantity).quantize(TWO)
         yield i
 
-def item_to_html(items):
+def item_to_html(items, ofile=sys.stdout):
     rate = Decimal('6.18')
     total = sum((i.amount for i in items))
     total_usd = ( total / rate).quantize(TWO)
     from jinja2 import Template
     with open('html_inv_temp.html') as f:
         t = Template(f.read())
-        print t.render(items=items, total_rmb=total, total_usd=total_usd, rate=rate)
+        ofile.write(t.render(items=items, total_rmb=total, total_usd=total_usd, rate=rate))
+        ofile.write('\n')
 
 class Meta(object):
     pass
 
-def item_to_packing_list(items):
+def item_to_packing_list(items, ofile=sys.stdout):
     from jinja2 import Template
-    boxes = sum((i.box for i in items if i.box is not None))
-    weights = boxes * 30
     groups = []
     sub = None
     for i in items:
@@ -207,18 +221,34 @@ def item_to_packing_list(items):
             sub.box = i.box
             sub.items = []
         sub.items.append(i)
+    groups.append(sub)
+    for g in groups:
+        if g.items[0].unit == 'kg':
+            g.weight = sum((x.quantity for x in g.items))
+        else:
+            g.weight = (g.box or 0) * 30
+    boxes = sum((i.box for i in groups if i.box is not None))
+    weights = sum((i.weight for i in groups if i.weight is not None))
 
     with open('html_plist_temp.html') as f:
         t = Template(f.read())
-        print t.render(items=groups, boxes=boxes, weight=weights)
+        ofile.write(t.render(items=groups, boxes=boxes, weight=weights))
+        ofile.write('\n')
     
 def main():
     new_items = csvsource(sys.argv[1])
+    #new_items = map(jin_to_kg, new_items)
+    #new_items = group_by_comment(new_items)
     new_items = list(normalize_items(new_items))
-    # new_items = sorted(new_items, key=lambda i: i.providor_zh)
-    #item_to_csv(new_items)
-    item_to_html(new_items)
-    #item_to_packing_list(new_items)
+    # new_items = sorted(new_items, key=lambda i: i.id)
+
+    # item_to_csv(new_items)
+
+    with open('inv1.html', 'w') as invf:
+        item_to_html(new_items, invf)
+
+    with open('plist1.html', 'w') as pf:
+        item_to_packing_list(new_items, pf)
 
 
 
