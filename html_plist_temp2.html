@@ -17,6 +17,11 @@
     .logo {
         float: left;
     }
+    .border {
+        border: 1px solid;
+    }
+    .noborder {
+    }
     </style>
     <meta charset="UTF-8"> 
 </head>
@@ -47,32 +52,41 @@
     </h4>
 
     <div class="centered" >
-    <table border="1" class="centered">
-    <tr> 
+    <table border="1" style="border:1px solid;" class="centered">
+    <tr class="border"> 
         <th>Item</th>
         <th> 
         <table>
-            <th>Description</th>
-            <th class="num">Quantity</th>
-            <th>Unit</th>
+            <col width="300"/>
+            <col width="40"/>
+            <col width="40"/>
+            <col width="160"/>
+            <tr>
+                <th class="noborder">Description</th>
+                <th class="num noborder">Quantity</th>
+                <th class="noborder">Selling Unit</th>
+                <th class="noborder">Size of Unit</th>
+            </tr>
         </table>
         </th>
         <th class="num">Box</th>
         <th class="num">Weight(KG)</th>
     </tr> 
     {% for sub in items %}
-    <tr>
+    <tr class="border">
         <td> {{sub.items[0].uid}} </td>
         <td>
             <table>
-                <col width="250"/>
+                <col width="300"/>
                 <col width="40"/>
-                <col width="200"/>
+                <col width="40"/>
+                <col width="160"/>
             {% for i in sub.items %}
             <tr>
-                <td>{{i.display}}</td>
-                <td class="num">{{i.quantity}}</td>
-                <td>{{i.unit}}</td>
+                <td class="noborder">{{i.display}}</td>
+                <td class="num noborder">{{i.quantity}}</td>
+                <td class="noborder">{{i.unit}}</td>
+                <td class="noborder">{{i.size}}</td>
             </tr>
             {% endfor %}
             </table>
@@ -81,7 +95,7 @@
         <td class="num">{{ sub.weight or ((sub.box or 0)* 30) or ""}} </td>
     </tr>
     {% endfor %}
-    <tr>
+    <tr class="border">
         <td></td>
         <td>Total:</td>
         <td class="num">{{ boxes }}</td>

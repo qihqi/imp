@@ -15,13 +15,15 @@ def int_or_none(x):
         return None
 
 class Item:
-    def __init__(self, uid, display=None, quantity=None, price=None, 
-            unit=None, comment=None, box=None, providor_zh=None):
+    def __init__(self, uid, order, display=None, quantity=None, price=None, 
+            unit=None, size=None, comment=None, box=None, providor_zh=None):
+        self.order = order
         self.uid= uid
         self.display = display
         self.quantity = quantity
         self.price = price
         self.unit = unit
+        self.size = size
         self.comment = comment
         self.box = box
         self.providor_zh = providor_zh
@@ -46,7 +48,7 @@ def group_by_comment(items):
     result = {}
     for i in items:
         # desc = (i.display, i.unit, i.price)
-        desc = getint(i.comment)
+        desc = i.comment
         if desc in result:  
             result[desc].price.append(i.price)
             result[desc].quantity += i.quantity
@@ -167,7 +169,7 @@ def csvsource(path):
     with open(path) as f:
         reader = csv.reader(f, delimiter=',', quotechar='"')
         for line in reader:
-            _, uid, providor_zh, display, quantity, unit, price, _, box, comment = line
+            order, uid, providor_zh, display, quantity, unit, size, price, _, box, comment = line
             providor_zh = providor_zh.decode('utf8')
             quantity = Decimal(quantity)
             price = Decimal(price)
@@ -175,10 +177,12 @@ def csvsource(path):
             comment = comment.decode('utf8')
             yield Item(
                     uid=uid,
+                    order=order,
                     providor_zh=providor_zh,
                     display=display,
                     quantity=quantity,
                     unit=unit,
+                    size=size,
                     price=price,
                     box=box,
                     comment=comment)
@@ -187,8 +191,8 @@ def item_to_csv(items):
     writer = csv.writer(sys.stdout)
     for i in items:
         writer.writerow([
-            '', i.uid, i.providor_zh.encode('utf8'), i.display, i.quantity, 
-            i.unit, i.price, i.price*i.quantity, i.box, i.comment.encode('utf8')])
+            i.order, i.uid, i.providor_zh.encode('utf8'), i.display, i.quantity, 
+            i.unit, i.size, i.price, i.price*i.quantity, i.box, i.comment.encode('utf8')])
 
 def normalize_items(items):
     for i in items:
@@ -201,7 +205,7 @@ def item_to_html(items, ofile=sys.stdout):
     total = sum((i.amount for i in items))
     total_usd = ( total / rate).quantize(TWO)
     from jinja2 import Template
-    with open('html_inv_temp.html') as f:
+    with open('html_inv_temp2.html') as f:
         t = Template(f.read())
         ofile.write(t.render(items=items, total_rmb=total, total_usd=total_usd, rate=rate))
         ofile.write('\n')
@@ -230,7 +234,7 @@ def item_to_packing_list(items, ofile=sys.stdout):
     boxes = sum((i.box for i in groups if i.box is not None))
     weights = sum((i.weight for i in groups if i.weight is not None))
 
-    with open('html_plist_temp.html') as f:
+    with open('html_plist_temp2.html') as f:
         t = Template(f.read())
         ofile.write(t.render(items=groups, boxes=boxes, weight=weights))
         ofile.write('\n')
@@ -239,16 +243,16 @@ def main():
     new_items = csvsource(sys.argv[1])
     #new_items = map(jin_to_kg, new_items)
     #new_items = group_by_comment(new_items)
-    new_items = list(normalize_items(new_items))
-    # new_items = sorted(new_items, key=lambda i: i.id)
+    # new_items = list(normalize_items(new_items))
+    new_items = sorted(new_items, key=lambda i: (i.order, i.uid))
+    # new_items = group_by_comment(new_items)
+    item_to_csv(new_items)
 
-    # item_to_csv(new_items)
-
-    with open('inv1.html', 'w') as invf:
-        item_to_html(new_items, invf)
-
-    with open('plist1.html', 'w') as pf:
-        item_to_packing_list(new_items, pf)
+#    with open('inv1.html', 'w') as invf:
+#        item_to_html(new_items, invf)
+#
+#    with open('plist1.html', 'w') as pf:
+#        item_to_packing_list(new_items, pf)
 
 
 
