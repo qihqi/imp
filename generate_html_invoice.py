@@ -4,6 +4,8 @@ import sys
 from decimal import Decimal
 import re
 TWO = Decimal('0.01')
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 def getint(x):
     return int(re.sub(r'[^\d]', '', x))
@@ -243,16 +245,16 @@ def main():
     new_items = csvsource(sys.argv[1])
     #new_items = map(jin_to_kg, new_items)
     #new_items = group_by_comment(new_items)
-    # new_items = list(normalize_items(new_items))
+    new_items = list(normalize_items(new_items))
     new_items = sorted(new_items, key=lambda i: (i.order, i.uid))
     # new_items = group_by_comment(new_items)
-    item_to_csv(new_items)
+    # item_to_csv(new_items)
 
-#    with open('inv1.html', 'w') as invf:
-#        item_to_html(new_items, invf)
-#
-#    with open('plist1.html', 'w') as pf:
-#        item_to_packing_list(new_items, pf)
+    with open('inv.html', 'w') as invf:
+        item_to_html(new_items, invf)
+
+    with open('plist.html', 'w') as pf:
+        item_to_packing_list(new_items, pf)
 
 
 
