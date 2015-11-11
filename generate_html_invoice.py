@@ -196,6 +196,26 @@ def item_to_csv(items):
             i.order, i.uid, i.providor_zh.encode('utf8'), i.display, i.quantity, 
             i.unit, i.size, i.price, i.price*i.quantity, i.box, i.comment.encode('utf8')])
 
+def item_to_price_list(items):
+    writer = csv.writer(sys.stdout)
+    for i in items:
+        try:
+            comment = i.comment.split('-')[1]
+            comment = comment.split(',')[0]
+            writer.writerow([
+                comment, i.display,  
+                i.unit, i.price])
+        except IndexError:
+            pass
+
+def smallcomment(i):
+    try:
+        i.comment = i.comment.split('-')[1]
+        i.comment = i.comment.split(',')[0]
+    except:
+        pass
+    return i
+
 def normalize_items(items):
     for i in items:
         i.price = i.price.quantize(TWO)
@@ -207,7 +227,7 @@ def item_to_html(items, ofile=sys.stdout):
     total = sum((i.amount for i in items))
     total_usd = ( total / rate).quantize(TWO)
     from jinja2 import Template
-    with open('html_inv_temp2.html') as f:
+    with open('html_inv_temp.html') as f:
         t = Template(f.read())
         ofile.write(t.render(items=items, total_rmb=total, total_usd=total_usd, rate=rate))
         ofile.write('\n')
@@ -249,13 +269,18 @@ def main():
     new_items = sorted(new_items, key=lambda i: (i.order, i.uid))
     # new_items = group_by_comment(new_items)
     # item_to_csv(new_items)
-
-    with open('inv.html', 'w') as invf:
-        item_to_html(new_items, invf)
-
-    with open('plist.html', 'w') as pf:
-        item_to_packing_list(new_items, pf)
-
+    
+    item_to_price_list(new_items)
+#    with open('inv.html', 'w') as invf:
+#        item_to_html(new_items, invf)
+#
+#    with open('plist.html', 'w') as pf:
+#        item_to_packing_list(new_items, pf)
+#
+    map(smallcomment, new_items)
+    new_items = sorted(new_items, key=lambda x: x.display)
+    with open('pricelist.html', 'w') as pf:
+        item_to_html(new_items, pf)
 
 
 main()

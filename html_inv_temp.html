@@ -24,63 +24,30 @@
 
 <div class="centered" style="text-align:center;">
     <div class="logo" style="width: 50em;"></div>
-    <img height="40" class="logo" src="./logo.jpg" />
+    <img height="40" class="logo" src="./logo.png" />
     <h2>YIWU RIYAO IMP&EXP.CO.LTD</h2>
     <h4>ROOM 8511.5F,  CUP INTERNATIONAL BUILDING NO1339  CHOUZHOU  ROAD, YIWU ZHEJIANG CHINA</h4>
     <h4>TEL: 0086-579-85314583  FAX:0086-579-85436673</h4>
     <h4><a href="http://riyaoimpexp.com">http://riyaoimpexp.com</a></h4>
 </div>
 <hr />
-<div class="centered" style="text-align:center;">
-    <img height="70" src="./barcode.svg"/>
-    <h2>Commercial Invoice No. HL 2721-07</h2>
-    <h2>Payment Format CAD</h2>
-</div>
-
 <div class="centered" >
-    <p>Ninbo, 2015 September 02</p> 
-    <h4>
-        <p>TO:</p>
-        <p>Superbisuterias S.A.</p>
-        <p>LA FRAGATA Mz 2190 No. SL 5</p>
-        <p>Guayaquil - Ecuador</p>
-        <p>Telf: +593 4 2532007</p>
-    </h4>
-
     <table border="1" class="centered">
     <tr> 
         <th>Item</th>
         <th>Description</th>
-        <th class="num">Quantity</th>
         <th>Unit</th>
         <th class="num">Price(RMB)</th>
-        <th class="num">Amount(RMB)</th>
     </tr> 
     {% for item in items %}
     <tr>
-        <td>{{ item.uid or ""}}</td>
+        <td>{{ item.comment or ""}}</td>
         <td>{{ item.display }} </td>
-        <td class="num">{{ item.quantity }} </td>
         <td>{{ item.unit }} </td>
         <td class="num">{{ item.price }} </td>
-        <td class="num">{{ item.amount }} </td>
     </tr>
     {% endfor %}
-    <tr>
-        <td></td>
-        <td></td>
-        <td class="num"></td>
-        <td></td>
-        <td class="num">Total FOB:</td>
-        <td class="num">{{ total_rmb }}</td>
-    </tr>
     </table>
-    <hr />
-    <div style="text-align:center">
-        <p> Total FOB RMB: {{total_rmb}}</p>
-        <p> Total FOB USD: {{total_usd}}*</p>
-        <p> * Using conversation rate of 1USD = {{rate}}RMB</p>
-    </div>
 </div>
 </body>
 </html>
