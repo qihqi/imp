@@ -3,6 +3,7 @@ import csv
 import sys
 from decimal import Decimal
 import re
+from random import randint
 TWO = Decimal('0.01')
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -157,6 +158,8 @@ def dbsource(pid):
 
     def make_item(item):
         return Item(
+                uid='',
+                order='',
                 display=dname(item),
                 comment=realname(item),
                 price=price(item),
@@ -222,9 +225,16 @@ def normalize_items(items):
         i.amount = (i.price * i.quantity).quantize(TWO)
         yield i
 
+def item_to_csv_real(items):
+    writer = csv.writer(sys.stdout)
+    for i in items:
+        writer.writerow([
+            i.providor_zh.encode('utf8'), i.display, i.comment.encode('utf8'), i.quantity, 
+            i.unit, i.box ])
+
 def item_to_html(items, ofile=sys.stdout):
     rate = Decimal('6.18')
-    total = sum((i.amount for i in items))
+    total = 0 #sum((i.amount for i in items))
     total_usd = ( total / rate).quantize(TWO)
     from jinja2 import Template
     with open('html_inv_temp.html') as f:
@@ -260,27 +270,46 @@ def item_to_packing_list(items, ofile=sys.stdout):
         t = Template(f.read())
         ofile.write(t.render(items=groups, boxes=boxes, weight=weights))
         ofile.write('\n')
+
+def change_price(item):
+    item.price *= ( Decimal(4) / Decimal('3.5'))
+    return item
+
+# return list of list of items, representing what goes in each inv
+# prices changed to usd with markup
+def split_invoices(items, total_num):
+    current_num = 0
+    total_cant = [item.quantity for item in items]
+    for i in range(total_num):
+        next_set = [] 
+        for i, item in enumerate(items):
+            target = item.quantity / total_num + randint(-2, 2)
+            if target >= total_cant[i]:
+                target = total_cant[i]
+            if i == total_num - 1:
+                target = total_cant[i]
+            total_cant[i] -= target
+            new_item = Item('','')
+            for x, y in item.__dict__.items():
+                setattr(new_item, x, y)
+            new_item.quantity = target
+            next_set.append(new_item)
+        yield next_set
+    
+
     
 def main():
     new_items = csvsource(sys.argv[1])
-    #new_items = map(jin_to_kg, new_items)
-    #new_items = group_by_comment(new_items)
-    new_items = list(normalize_items(new_items))
-    new_items = sorted(new_items, key=lambda i: (i.order, i.uid))
-    # new_items = group_by_comment(new_items)
-    # item_to_csv(new_items)
-    
-    item_to_price_list(new_items)
-#    with open('inv.html', 'w') as invf:
-#        item_to_html(new_items, invf)
-#
-#    with open('plist.html', 'w') as pf:
-#        item_to_packing_list(new_items, pf)
-#
-    map(smallcomment, new_items)
-    new_items = sorted(new_items, key=lambda x: x.display)
-    with open('pricelist.html', 'w') as pf:
-        item_to_html(new_items, pf)
+    # new_items = dbsource(19)
+    item_to_csv(new_items) 
+
+#    for i, inv in enumerate(split_invoices(new_items, 12)):
+#        print 'INV NUMBER', i
+#        print (len(group_by_price(inv)))
+#        print 'total', sum((x.quantity * x.price for x in inv))
+#        print '\n\n'
+
+
 
 
 main()
