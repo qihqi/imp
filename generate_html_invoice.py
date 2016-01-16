@@ -35,8 +35,8 @@ class Item:
 def group_by_price(new_items):
     result = {}
     for i in new_items:
-        # desc = (i.display, i.unit, i.price)
-        desc = (i.providor_zh, i.display, i.unit, i.price)
+        desc = (i.display, i.unit)
+        # desc = (i.providor_zh, i.display, i.unit, i.price)
         if desc in result:  
             result[desc].comment.append(i.comment)
             result[desc].quantity += i.quantity
@@ -133,11 +133,15 @@ def dbsource(pid):
         decl = declared.get(prods[item.upi].declaring_id)
         if decl is None:
             print >>sys.stderr, 'not found decl', item.upi 
-            return ''
+            if prods[item.upi].name_es is None:
+                prods[item.upi].name_es = ''
+            return prods[item.upi].name_es.encode('utf8')
         return decl.display_name.encode('utf8')
 
     def unit(item):
         p = prods[item.upi]
+        if not p.unit:
+            p.unit = ''
         return prods[item.upi].unit.encode('utf8')
 
     def realname(item):
@@ -151,14 +155,14 @@ def dbsource(pid):
 
     def price(item):
         p = prods[item.upi]
-        return item.price_rmb / 4
+        return item.price_rmb 
 
     def prov(item):
         return prods[item.upi].providor_zh.encode('utf8')
 
     def make_item(item):
         return Item(
-                uid='',
+                uid=item.uid,
                 order='',
                 display=dname(item),
                 comment=realname(item),
@@ -174,6 +178,7 @@ def csvsource(path):
     with open(path) as f:
         reader = csv.reader(f, delimiter=',', quotechar='"')
         for line in reader:
+            line = line[:11]
             order, uid, providor_zh, display, quantity, unit, size, price, _, box, comment = line
             providor_zh = providor_zh.decode('utf8')
             quantity = Decimal(quantity)
@@ -195,9 +200,13 @@ def csvsource(path):
 def item_to_csv(items):
     writer = csv.writer(sys.stdout)
     for i in items:
-        writer.writerow([
+        row = [
             i.order, i.uid, i.providor_zh.encode('utf8'), i.display, i.quantity, 
-            i.unit, i.size, i.price, i.price*i.quantity, i.box, i.comment.encode('utf8')])
+            i.unit, i.size, i.price, i.price*i.quantity, i.box, i.comment.encode('utf8')]
+        orprice = getattr(i, 'original_price', None)
+        if orprice:
+            row.append(orprice)
+        writer.writerow(row)
 
 def item_to_price_list(items):
     writer = csv.writer(sys.stdout)
@@ -295,19 +304,55 @@ def split_invoices(items, total_num):
             new_item.quantity = target
             next_set.append(new_item)
         yield next_set
+
+
+def load_old_prices(source):
+    price_map = {}
+    for x in source:
+        price_map[(x.display, x.unit)] = x.price
+    return price_map
+
+
+def mark_price(new_items, price_map):
+    for x in new_items:
+        key = (x.display, x.unit)
+        if key in price_map:
+            x.original_price = x.price
+            x.price = price_map[key]
     
 
-    
+def process_box(start, end, new_items):
+    total_box = new_items[start].box
+    total_quant = sum(x.quantity for x in new_items[start:end])
+    for x in range(start, end):
+        item = new_items[x]
+        item.box = total_box / total_quant * item.quantity
+
+
+
+def write_boxes(new_items):
+    start = 0
+    end = 0
+    for i in range(len(new_items)):
+        item = new_items[i]
+        if item.box and i != start:
+            end = i
+            process_box(start, end, new_items)
+            start = end
+
+
 def main():
-    new_items = csvsource(sys.argv[1])
-    # new_items = dbsource(19)
-    item_to_csv(new_items) 
-
-#    for i, inv in enumerate(split_invoices(new_items, 12)):
-#        print 'INV NUMBER', i
-#        print (len(group_by_price(inv)))
-#        print 'total', sum((x.quantity * x.price for x in inv))
-#        print '\n\n'
+    new_items = dbsource(35)
+    item_to_csv(new_items)
+    return
+    new_items = list(csvsource(sys.argv[1]))
+    price_map = load_old_prices(csvsource('./sorted_with_size2.csv'))
+    new_items = map(jin_to_kg, new_items)
+    new_items = map(package, new_items)
+    mark_price(new_items, price_map)
+    # write_boxes(new_items)
+    new_items = group_by_comment(new_items)
+    item_to_csv(sorted(new_items, key=lambda x: x.providor_zh))
 
 
 

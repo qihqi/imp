@@ -260,6 +260,14 @@ var ProdBox = React.createClass({
     }
 });
 
+var CreateProd = React.createClass({
+    render: function() {
+        return <comp.CreateOrUpdateBox url='/importapi/prod'
+            names={['name_zh', 'name_es', 'providor_zh', 'providor_item_id', 'unit']}
+            callback={function(){}} />;
+    }
+});
+
 var PurchaseHeader = React.createClass({
     getInitialState: function() {
         this.fetchcontent(this.props.uid, setState.bind(this));
@@ -327,7 +335,7 @@ var ProdList = React.createClass(comp.display_list_of_item(PROD_KEYS));
 var Test = React.createClass({
     render: function() {
     return <div>
-        <AllDeclared />
+        <CreateProd />
     </div>;
     }
 });
@@ -588,6 +596,8 @@ var AllDeclared = React.createClass({
         return <div> {all} </div>;
     }
 });
+
+
 
 module.exports.Purchase = Purchase;
 module.exports.DeclaredItem = DeclaredItem;
